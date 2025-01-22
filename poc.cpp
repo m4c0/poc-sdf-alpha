@@ -42,9 +42,10 @@ int main() {
   auto pix = reinterpret_cast<stbi::pixel *>(*img.data);
   for (auto i = 0; i < sdf.size(); i++) {
     auto c = p1[i];
-    if (c < 0) c = 0;
-    if (c > 255) c = 255;
-    unsigned char cc = c;
+    unsigned char cc = 0;
+    if (c < 5) cc = 255;
+    if (c < 3) cc = 0;
+    if (c == 0) cc = 255;
     pix[i] = { cc, cc, cc, 255 };
   }
   stbi::write_rgba_unsafe("out/image.png", img.width, img.height, pix);

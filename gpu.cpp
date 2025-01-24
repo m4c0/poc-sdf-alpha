@@ -7,10 +7,12 @@ import vee;
 import voo;
 
 int main() try {
+  auto img = stbi::load("image.png").take([](auto msg) { die(msg); });
+
   voo::device_and_queue dq { "gpu" };
 
-  constexpr const auto map_sz = 1024 * 1024;
-  constexpr const auto buf_sz = map_sz * sizeof(float);
+  const unsigned map_sz = img.width * img.height;
+  const unsigned buf_sz = map_sz * sizeof(float);
   voo::host_buffer b1 { dq, buf_sz };
   voo::host_buffer b2 { dq, buf_sz };
 
@@ -41,9 +43,8 @@ int main() try {
     voo::mapmem mm { b1.memory() };
     auto p = static_cast<float *>(*mm);
 
-    auto img = stbi::load("image.png").take([](auto msg) { die(msg); });
-    for (auto i = 0; i < buf_sz; i++) {
-      //p[i] = 256.0 - (*img.data)[i * 4];
+    for (auto i = 0; i < map_sz; i++) {
+      p[i] = 256.0 - (*img.data)[i * 4];
     }
   }
 
@@ -61,14 +62,16 @@ int main() try {
   vee::device_wait_idle();
 
   {
-    voo::mapmem mm { b2.memory() };
-    int counts[4] {};
+    auto pix = reinterpret_cast<stbi::pixel *>(*img.data);
+
+    voo::mapmem mm { b1.memory() };
     auto p = static_cast<float *>(*mm);
     for (auto i = 0; i < map_sz; i++) {
-      int c = p[i];
-      if (c >= 3) c = 3;
-      counts[c]++;
+      unsigned char cc = p[i] * 255;
+      pix[i] = { cc, cc, cc, 255 };
     }
+
+    stbi::write_rgba_unsafe("out/image.png", img.width, img.height, pix);
   }
 } catch (...) {
   return 1;

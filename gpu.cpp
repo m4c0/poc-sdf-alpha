@@ -49,11 +49,14 @@ int main() try {
   }
 
   {
-    vee::begin_cmd_buf_one_time_submit(cb);
-    //vee::cmd_bind_c_pipeline(cb, *p);
-    //vee::cmd_bind_c_descriptor_set(cb, *pl, 0, ds_f);
-    //vee::cmd_dispatch(cb, 1024, 1024, 1);
-    vee::end_cmd_buf(cb);
+    voo::cmd_buf_one_time_submit::build(cb, [&](auto & cb) {
+      vee::cmd_bind_c_pipeline(*cb, *p);
+      vee::cmd_bind_c_descriptor_set(*cb, *pl, 0, ds_f);
+      vee::cmd_dispatch(*cb, 1024, 1024, 1);
+    });
+    auto tmp = ds_f;
+    ds_f = ds_b;
+    ds_b = tmp;
   }
   dq.queue()->queue_submit({
     .fence = *f,
@@ -64,10 +67,10 @@ int main() try {
   {
     auto pix = reinterpret_cast<stbi::pixel *>(*img.data);
 
-    voo::mapmem mm { b1.memory() };
+    voo::mapmem mm { b2.memory() };
     auto p = static_cast<float *>(*mm);
     for (auto i = 0; i < map_sz; i++) {
-      unsigned char cc = p[i] * 255;
+      unsigned char cc = p[i] > 255 ? 255 : p[i];
       pix[i] = { cc, cc, cc, 255 };
     }
 

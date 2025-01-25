@@ -1,4 +1,10 @@
 #version 450
 
+layout(set = 0, binding = 0) readonly buffer i_ { float i[]; };
+layout(set = 0, binding = 1)          buffer o_ { float o[]; };
+
 void main() {
+  uvec2 p = gl_GlobalInvocationID.xy;
+  uint pp = p.x + p.y * gl_NumWorkGroups.x;
+  o[pp] = i[pp];
 }

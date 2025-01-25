@@ -48,31 +48,35 @@ int main() try {
     }
   }
 
-  for (auto i = 0; i < 17; i++) {
-    {
-      voo::cmd_buf_one_time_submit::build(cb, [&](auto & cb) {
+  bool out_to_1 = true;
+  {
+    voo::cmd_buf_one_time_submit::build(cb, [&](auto & cb) {
+      for (auto i = 0; i < 16; i++) {
+        out_to_1 = !out_to_1;
+
+        auto ds = out_to_1 ? ds_b : ds_f;
+        auto b = out_to_1 ? b1.buffer() : b2.buffer();
+
         vee::cmd_bind_c_pipeline(*cb, *p);
-        vee::cmd_bind_c_descriptor_set(*cb, *pl, 0, ds_f);
-        vee::cmd_dispatch(*cb, 1024, 1024, 1);
-      });
-      auto tmp = ds_f;
-      ds_f = ds_b;
-      ds_b = tmp;
-    }
-    dq.queue()->queue_submit({
-      .fence = *f,
-      .command_buffer = cb
+        vee::cmd_bind_c_descriptor_set(*cb, *pl, 0, ds);
+        vee::cmd_dispatch(*cb, img.width, img.height, 1);
+        vee::cmd_pipeline_barrier(*cb, b, vee::from_compute_to_compute);
+      }
     });
   }
+  dq.queue()->queue_submit({
+    .fence = *f,
+    .command_buffer = cb
+  });
   vee::device_wait_idle();
 
   {
     auto pix = reinterpret_cast<stbi::pixel *>(*img.data);
 
-    voo::mapmem mm { b2.memory() };
+    voo::mapmem mm { out_to_1 ? b1.memory() : b2.memory() };
     auto p = static_cast<float *>(*mm);
     for (auto i = 0; i < map_sz; i++) {
-      unsigned char cc = p[i] > 255 ? 255 : p[i];
+      unsigned char cc = p[i] >= 16 ? 255 : (16 * p[i]);
       pix[i] = { cc, cc, cc, 255 };
     }
 

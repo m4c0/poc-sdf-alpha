@@ -3,8 +3,23 @@
 layout(set = 0, binding = 0) readonly buffer i_ { float i[]; };
 layout(set = 0, binding = 1)          buffer o_ { float o[]; };
 
+float ii(uint x, uint y) {
+  uvec2 p = gl_GlobalInvocationID.xy + uvec2(x, y);
+
+  if (p.x < 0) return 10000;
+  if (p.x > gl_NumWorkGroups.x) return 10000;
+  if (p.y < 0) return 10000;
+  if (p.y > gl_NumWorkGroups.y) return 10000;
+
+  uint pp = p.x + p.y * gl_NumWorkGroups.x;
+  return i[pp];
+}
+
 void main() {
+  float oo = ii(0, 0);
+  oo = min(oo, ii(-1, 0) + 1);
+
   uvec2 p = gl_GlobalInvocationID.xy;
   uint pp = p.x + p.y * gl_NumWorkGroups.x;
-  o[pp] = i[pp];
+  o[pp] = oo;
 }

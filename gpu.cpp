@@ -48,20 +48,22 @@ int main() try {
     }
   }
 
-  {
-    voo::cmd_buf_one_time_submit::build(cb, [&](auto & cb) {
-      vee::cmd_bind_c_pipeline(*cb, *p);
-      vee::cmd_bind_c_descriptor_set(*cb, *pl, 0, ds_f);
-      vee::cmd_dispatch(*cb, 1024, 1024, 1);
+  for (auto i = 0; i < 17; i++) {
+    {
+      voo::cmd_buf_one_time_submit::build(cb, [&](auto & cb) {
+        vee::cmd_bind_c_pipeline(*cb, *p);
+        vee::cmd_bind_c_descriptor_set(*cb, *pl, 0, ds_f);
+        vee::cmd_dispatch(*cb, 1024, 1024, 1);
+      });
+      auto tmp = ds_f;
+      ds_f = ds_b;
+      ds_b = tmp;
+    }
+    dq.queue()->queue_submit({
+      .fence = *f,
+      .command_buffer = cb
     });
-    auto tmp = ds_f;
-    ds_f = ds_b;
-    ds_b = tmp;
   }
-  dq.queue()->queue_submit({
-    .fence = *f,
-    .command_buffer = cb
-  });
   vee::device_wait_idle();
 
   {
